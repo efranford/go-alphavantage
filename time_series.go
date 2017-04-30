@@ -98,6 +98,10 @@ func (s *TimeSeriesService) IntraDay(symbol string, interval string) (*TimeSerie
 		return nil, err
 	}
 
+	if err := checkForError(body); err != nil {
+		return nil, err
+	}
+
 	return parseResponse(body)
 
 }
