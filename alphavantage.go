@@ -8,7 +8,6 @@ import (
 
 const (
 	defaultBaseURL = "http://www.alphavantage.co"
-
 )
 
 type Client struct {

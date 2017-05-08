@@ -40,7 +40,7 @@ type response struct {
 	TimeSeries 	*json.RawMessage
 }
 
-func parseResponse(rawRes []byte) (*TimeSeries, error) {
+func parseResponse(rawRes []byte, title string, timeLayout string) (*TimeSeries, error) {
 
 	jsonRaw := map[string]json.RawMessage{}
 	json.Unmarshal(rawRes, &jsonRaw)
@@ -54,8 +54,6 @@ func parseResponse(rawRes []byte) (*TimeSeries, error) {
 
 	var jsonMap jsonMap
 
-	title := fmt.Sprintf("Time Series (%s)", res.MetaData.Interval)
-
 	if err := json.Unmarshal(jsonRaw[title], &jsonMap); err != nil {
 		log.Fatal(err)
 		return nil, err
@@ -68,7 +66,7 @@ func parseResponse(rawRes []byte) (*TimeSeries, error) {
 
 	for key, _ := range jsonMap {
 		loc, _ := time.LoadLocation(res.MetaData.TimeZone)
-		timeP, _ := time.ParseInLocation("2006-01-02 15:04:05", key, loc)
+		timeP, _ := time.ParseInLocation(timeLayout, key, loc)
 		tmp := jsonMap[key]
 		tmp.Time = timeP
 		jsonMap[key] = tmp
@@ -102,6 +100,77 @@ func (s *TimeSeriesService) IntraDay(symbol string, interval string) (*TimeSerie
 		return nil, err
 	}
 
-	return parseResponse(body)
+	title := fmt.Sprintf("Time Series (%s)", interval)
+
+	return parseResponse(body, title, "2006-01-02 15:04:05")
+
+}
+
+func (s *TimeSeriesService) Daily(symbol string) (*TimeSeries, error) {
+
+	req, _ := s.client.NewGetRequest("query")
+
+	q := req.URL.Query()
+	q.Add("function", "TIME_SERIES_DAILY")
+	q.Add("symbol", symbol)
+	req.URL.RawQuery = q.Encode()
+
+	body, err := s.client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkForError(body); err != nil {
+		return nil, err
+	}
+
+	return parseResponse(body, "Time Series (Daily)", "2006-01-02")
+
+}
+
+func (s *TimeSeriesService) Weekly(symbol string) (*TimeSeries, error) {
+
+	req, _ := s.client.NewGetRequest("query")
+
+	q := req.URL.Query()
+	q.Add("function", "TIME_SERIES_WEEKLY")
+	q.Add("symbol", symbol)
+	req.URL.RawQuery = q.Encode()
+
+	body, err := s.client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkForError(body); err != nil {
+		return nil, err
+	}
+
+	return parseResponse(body, "Weekly Time Series", "2006-01-02")
+
+}
+
+func (s *TimeSeriesService) Monthly(symbol string) (*TimeSeries, error) {
+
+	req, _ := s.client.NewGetRequest("query")
+
+	q := req.URL.Query()
+	q.Add("function", "TIME_SERIES_MONTHLY")
+	q.Add("symbol", symbol)
+	req.URL.RawQuery = q.Encode()
+
+	body, err := s.client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkForError(body); err != nil {
+		return nil, err
+	}
+
+	return parseResponse(body, "Monthly Time Series", "2006-01-02")
 
 }
